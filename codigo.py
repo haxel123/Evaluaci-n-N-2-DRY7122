@@ -88,3 +88,20 @@ if __name__ == "__main__":
 
 #8bc67068-d89a-4e21-ab2c-3abc59f3050b
 "https://graphhopper.com/api/1/route"
+
+import requests
+
+def calcular_ruta():
+    # Usa la API Key, NO tu contraseña
+    API_KEY = "a123456b-7890-cdef-1234-56789abcdef0"  # 👈 Key de ejemplo
+    
+    url = "https://graphhopper.com/api/1/route"
+    
+    # ... resto del código igual ...
+    params = {
+        "point": [f"{origen}, Chile", f"{destino}, Argentina"],
+        "vehicle": vehiculo,
+        "locale": "es",
+        "key": API_KEY,  # 👈 Aquí solo va la API Key
+        "instructions": True
+    }
