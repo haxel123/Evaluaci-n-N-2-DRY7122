@@ -1,7 +1,7 @@
 import requests
 
 def obtener_ruta():
-    API_KEY = "TU_API_KEY_GRAPHHOPPER"  # ¡Obtén una en graphhopper.com!
+    API_KEY = "8bc67068-d89a-4e21-ab2c-3abc59f3050b"  # ¡Obtén una en graphhopper.com!
     url = "https://graphhopper.com/api/1/route"
     
     print("\n" + "="*50)
