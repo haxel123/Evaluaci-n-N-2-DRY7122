@@ -111,3 +111,29 @@ key) print(dest)
 '''
 
 
+
+'''
+def geocoding (location,
+key): while location ==
+"":
+location = input("Enter the location again: ")
+geocode_url =
+"https://graphhopper.com/api/1/geocode?"
+url = geocode_url + urllib.parse.urlencode({"q":location, "limit":
+"1", "key":key})
+''''
+
+'''
+print("Geocoding API URL for " + new_loc + " (Location Type: " + value + ")\n"
++ url)
+else:
+lat="null"
+lng="null"
+new_loc=location
+print("Geocode API status: " + str(json_status) + "\nError message: "
++ json_data["message"])
+return json_status,lat,lng,new_loc
+while True:
+loc1 = input("Starting Location: ")
+
+'''
