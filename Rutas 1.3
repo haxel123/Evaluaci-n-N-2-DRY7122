@@ -1,0 +1,146 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+import requests
+import urllib.parse
+
+API_KEY = "8bc67068-d89a-4e21-ab2c-3abc59f3050b"
+GEOCODE_URL = "https://graphhopper.com/api/1/geocode?"
+ROUTE_URL = "https://graphhopper.com/api/1/route?"
+
+# Mapeo de perfiles en español a los valores válidos para GraphHopper
+PERFILES = {
+    "auto": "car",
+    "bicicleta": "bike",
+    "caminando": "foot"
+}
+
+def geocodificar(ubicacion):
+    """
+    Usa la Geocoding API de GraphHopper para obtener latitud, longitud
+    y nombre formateado de la ubicación.
+    """
+    if not ubicacion:
+        return None, None, ubicacion
+
+    params = {
+        "q": ubicacion,
+        "limit": 1,
+        "key": API_KEY
+    }
+    try:
+        r = requests.get(GEOCODE_URL + urllib.parse.urlencode(params))
+        r.raise_for_status()
+        data = r.json()
+        if not data["hits"]:
+            print(f"No se encontró la ubicación: {ubicacion}")
+            return None, None, ubicacion
+
+        hit = data["hits"][0]
+        lat = hit["point"]["lat"]
+        lng = hit["point"]["lng"]
+        nombre = hit.get("name", ubicacion)
+        estado = hit.get("state", "")
+        pais = hit.get("country", "")
+        # Formatear nombre completo
+        if estado and pais:
+            nuevo_nombre = f"{nombre}, {estado}, {pais}"
+        elif pais:
+            nuevo_nombre = f"{nombre}, {pais}"
+        else:
+            nuevo_nombre = nombre
+
+        return lat, lng, nuevo_nombre
+
+    except requests.RequestException as e:
+        print("Error en la solicitud de geocodificación:", e)
+        return None, None, ubicacion
+
+def calcular_ruta(origen, destino, perfil):
+    """
+    Usa la Routing API de GraphHopper para obtener distancia,
+    tiempo y pasos de la ruta.
+    """
+    params = {
+        "key": API_KEY,
+        "vehicle": perfil,
+        "point": [f"{origen[0]},{origen[1]}", f"{destino[0]},{destino[1]}"],
+        "instructions": "true"
+    }
+    try:
+        url = ROUTE_URL + urllib.parse.urlencode(params, doseq=True)
+        r = requests.get(url)
+        r.raise_for_status()
+        return r.json()
+    except requests.RequestException as e:
+        print("Error en la solicitud de enrutamiento:", e)
+        return None
+
+def seleccionar_perfil():
+    """
+    Pregunta repetidamente al usuario por el medio de transporte
+    hasta que ingrese una opción válida o 's' para salir.
+    """
+    while True:
+        entrada = input("Elija medio de transporte (auto, bicicleta, caminando) o 's' para salir: ").strip().lower()
+        if entrada == "s":
+            return None
+        if entrada in PERFILES:
+            return PERFILES[entrada], entrada
+        print("Perfil no válido. Opciones: auto, bicicleta, caminando.")
+
+def main():
+    print("=== Calculadora de Rutas GraphHopper ===")
+    while True:
+        print("\n(ingresa 's' para salir en cualquier momento)")
+        sel = seleccionar_perfil()
+        if sel is None:
+            break
+        perfil, perfil_input = sel
+
+        origen_input = input("Ciudad de Origen (ejemplo: Santiago, Chile): ").strip()
+        if origen_input.lower() == "s":
+            break
+        lat_o, lng_o, nombre_o = geocodificar(origen_input)
+        if lat_o is None:
+            continue
+
+        destino_input = input("Ciudad de Destino (ejemplo: Buenos Aires, Argentina): ").strip()
+        if destino_input.lower() == "s":
+            break
+        lat_d, lng_d, nombre_d = geocodificar(destino_input)
+        if lat_d is None:
+            continue
+
+        # Obtener la ruta
+        resultado = calcular_ruta((lat_o, lng_o), (lat_d, lng_d), perfil)
+        if not resultado or "paths" not in resultado:
+            print("No se pudo calcular la ruta.")
+            continue
+
+        path = resultado["paths"][0]
+        distancia_m = path["distance"]
+        km = distancia_m / 1000
+        millas = km / 1.60934
+        tiempo_ms = path["time"]
+        s = int((tiempo_ms / 1000) % 60)
+        m = int((tiempo_ms / (1000 * 60)) % 60)
+        h = int(tiempo_ms / (1000 * 60 * 60))
+
+        # Mostrar resultados en español
+        print("\n====== Resultado de la Ruta ======")
+        print(f"Origen: {nombre_o}")
+        print(f"Destino: {nombre_d}")
+        print(f"Medio de transporte: {perfil_input.capitalize()}")
+        print(f"Distancia: {millas:.1f} millas / {km:.1f} km")
+        print(f"Duración estimada: {h:02d}h:{m:02d}m:{s:02d}s")
+        print("----------------------------------")
+        print("Indicaciones paso a paso:")
+        for instr in path["instructions"]:
+            texto = instr["text"]
+            dist_km = instr["distance"] / 1000
+            print(f" • {texto} ({dist_km:.1f} km)")
+        print("==================================\n")
+
+if __name__ == "__main__":
+    main()
