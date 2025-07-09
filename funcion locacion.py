@@ -31,3 +31,8 @@ json_status = replydata.status_code
 
 if json_status == 200:
     print("Geocoding API URL  for " + loc1 + ":\n" + url)
+    
+orig = geocoding(loc1,
+key) print(orig)
+dest = geocoding(loc2,
+key) print(dest)
