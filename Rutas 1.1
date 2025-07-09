@@ -1,0 +1,127 @@
+PERFILES = {
+    "auto": "car",
+    "bicicleta": "bike",
+    "caminando": "foot"
+}
+
+def geocodificar(ubicacion):
+    """
+    Usa la Geocoding API de GraphHopper para obtener latitud, longitud
+    y nombre formateado de la ubicación.
+    """
+    if not ubicacion:
+        return None, None, ubicacion
+
+    params = {
+        "q": ubicacion,
+        "limit": 1,
+        "key": API_KEY
+    }
+    try:
+        r = requests.get(GEOCODE_URL + urllib.parse.urlencode(params))
+        r.raise_for_status()
+        data = r.json()
+        if not data["hits"]:
+            print(f"No se encontró la ubicación: {ubicacion}")
+            return None, None, ubicacion
+
+        hit = data["hits"][0]
+        lat = hit["point"]["lat"]
+        lng = hit["point"]["lng"]
+        nombre = hit.get("name", ubicacion)
+        estado = hit.get("state", "")
+        pais = hit.get("country", "")
+        # Formatear nombre completo
+        if estado and pais:
+            nuevo_nombre = f"{nombre}, {estado}, {pais}"
+        elif pais:
+            nuevo_nombre = f"{nombre}, {pais}"
+        else:
+            nuevo_nombre = nombre
+
+        return lat, lng, nuevo_nombre
+
+    except requests.RequestException as e:
+        print("Error en la solicitud de geocodificación:", e)
+        return None, None, ubicacion
+
+def calcular_ruta(origen, destino, perfil):
+    """
+    Usa la Routing API de GraphHopper para obtener distancia,
+    tiempo y pasos de la ruta.
+    """
+    params = {
+        "key": API_KEY,
+        "vehicle": perfil,
+        "point": [f"{origen[0]},{origen[1]}", f"{destino[0]},{destino[1]}"],
+        "instructions": "true"
+    }
+    try:
+        url = ROUTE_URL + urllib.parse.urlencode(params, doseq=True)
+        r = requests.get(url)
+        r.raise_for_status()
+        return r.json()
+    except requests.RequestException as e:
+        print("Error en la solicitud de enrutamiento:", e)
+        return None
+
+def main():
+    print("=== Calculadora de Rutas GraphHopper ===")
+    while True:
+        print("\nIngrese 's' para salir en cualquier momento.")
+        perfil_input = input("Elija medio de transporte (auto, bicicleta, caminando): ").strip().lower()
+        if perfil_input == "s":
+            break
+        perfil = PERFILES.get(perfil_input)
+        if perfil is None:
+            print("Perfil no válido, usando 'auto' por defecto.")
+            perfil = PERFILES["auto"]
+
+        origen_input = input("Ciudad de Origen (p.ej., Santiago, Chile): ").strip()
+        if origen_input.lower() == "s":
+            break
+        lat_o, lng_o, nombre_o = geocodificar(origen_input)
+        if lat_o is None:
+            continue  # vuelve a preguntar
+
+        destino_input = input("Ciudad de Destino (p.ej., Buenos Aires, Argentina): ").strip()
+        if destino_input.lower() == "s":
+            break
+        lat_d, lng_d, nombre_d = geocodificar(destino_input)
+        if lat_d is None:
+            continue  # vuelve a preguntar
+
+        # Obtener ruta
+        resultado = calcular_ruta((lat_o, lng_o), (lat_d, lng_d), perfil)
+        if not resultado or "paths" not in resultado:
+            print("No se pudo calcular la ruta.")
+            continue
+
+        path = resultado["paths"][0]
+        # Distancias y tiempos
+        distancia_metros = path["distance"]
+        distancia_km = distancia_metros / 1000
+        distancia_millas = distancia_km / 1.60934
+        tiempo_ms = path["time"]
+        segundos = int((tiempo_ms / 1000) % 60)
+        minutos = int((tiempo_ms / (1000 * 60)) % 60)
+        horas = int(tiempo_ms / (1000 * 60 * 60))
+
+        # Mostrar resultados
+        print("\n====== Resultado de la Ruta ======")
+        print(f"Origen: {nombre_o}")
+        print(f"Destino: {nombre_d}")
+        print(f"Medio de transporte: {perfil_input.capitalize()}")
+        print("----------------------------------")
+        print(f"Distancia: {distancia_millas:.1f} millas / {distancia_km:.1f} km")
+        print(f"Duración estimada: {horas:02d}h:{minutos:02d}m:{segundos:02d}s")
+        print("----------------------------------")
+        print("Indicaciones paso a paso:")
+        for instr in path["instructions"]:
+            texto = instr["text"]
+            dist = instr["distance"] / 1000
+            print(f"• {texto} ({dist:.1f} km)")
+        print("==================================")
+
+if __name__ == "__main__":
+    main()
