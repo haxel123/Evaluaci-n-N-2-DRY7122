@@ -78,3 +78,20 @@ new_loc=location
 return json_status,lat,lng,new_loc
 '''
 
+
+
+
+
+
+
+
+'''
+while True:
+loc1 = input("Starting Location:
+") orig = geocoding(loc1, key)
+print(orig)
+loc2 = input("Destination:
+") dest = geocoding(loc2,
+key) print(dest)
+'''
+
