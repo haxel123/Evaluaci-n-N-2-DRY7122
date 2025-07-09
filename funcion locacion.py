@@ -36,3 +36,45 @@ orig = geocoding(loc1,
 key) print(orig)
 dest = geocoding(loc2,
 key) print(dest)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+'''
+name = json_data["hits"][0]["name"]
+value = json_data["hits"][0]["osm_value"]
+if "country" in json_data["hits"][0]:
+country = json_data["hits"][0]
+["country"]
+else:
+country=""
+if "state" in json_data["hits"][0]:
+state = json_data["hits"][0]
+["state"]
+else:
+state=""
+if len(state) !=0 and len(country) !=0:
+new_loc = name + ", " + state + ", " + country
+elif len(state) !=0:
+new_loc = name + ", " + country
+else:
+new_loc = name
+print("Geocoding API URL for " + new_loc + " (Location Type: " + value + ")\n"
++ url)
+else:
+lat="null"
+lng="null"
+new_loc=location
+return json_status,lat,lng,new_loc
+'''
+
